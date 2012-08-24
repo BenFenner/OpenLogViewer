@@ -33,7 +33,7 @@ import java.beans.PropertyChangeListener;
 import javax.swing.JPanel;
 import org.diyefi.openlogviewer.OpenLogViewer;
 import org.diyefi.openlogviewer.genericlog.GenericDataElement;
-import org.diyefi.openlogviewer.utils.MathUtils;
+import org.diyefi.openlogviewer.utils.SigFigUtils;
 
 /**
  * SingleGraphPanel is a JPanel that uses a transparent background.
@@ -308,9 +308,7 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 		numSnapsFromLeft = Math.round(numSnapsFromLeft);
 		final int dataLocation = (int) graphPosition + (int) numSnapsFromLeft;
 		if ((dataLocation >= 0) && (dataLocation < availableDataRecords)) {
-			double data = gde.get(dataLocation);
-			data = MathUtils.roundToSignificantFigures(data, SIG_FIGS);
-			result = Double.toString(data);
+			result = SigFigUtils.truncate(gde.get(dataLocation), SIG_FIGS);
 			if (result.length() > SIG_FIGS + 2) {
 				result = result.substring(0, SIG_FIGS + 2);
 			}
@@ -331,24 +329,19 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 			double meanData = dataPointRangeInfo[cursorPosition + EntireGraphingPanel.LEFT_OFFSCREEN_POINTS_ZOOMED_OUT][1];
 			double maxData = dataPointRangeInfo[cursorPosition + EntireGraphingPanel.LEFT_OFFSCREEN_POINTS_ZOOMED_OUT][2];
 			if (minData != -Double.MAX_VALUE) {
-				minData = MathUtils.roundToSignificantFigures(minData, SIG_FIGS);
-				maxData = MathUtils.roundToSignificantFigures(maxData, SIG_FIGS);
-				String resultMin = Double.toString(minData);
-				String resultMax = Double.toString(maxData);
+				String resultMin = SigFigUtils.truncate(minData, SIG_FIGS);
+				String resultMax = SigFigUtils.truncate(maxData, SIG_FIGS);
 				if (resultMin.length() > SIG_FIGS + 2) {
 					resultMin = resultMin.substring(0, SIG_FIGS + 2);
 				}
 				if (resultMax.length() > SIG_FIGS + 2) {
 					resultMax = resultMax.substring(0, SIG_FIGS + 2);
 				}
-				meanData = MathUtils.roundToSignificantFigures(meanData, SIG_FIGS);
-				String resultMean = Double.toString(meanData);
+				String resultMean = SigFigUtils.truncate(meanData, SIG_FIGS);
 				if (resultMin.length() > resultMax.length() && resultMin.length() < resultMean.length()) {
-					meanData = MathUtils.roundToSignificantFigures(meanData, resultMin.length() - 2);
-					resultMean = resultMean.substring(0, resultMin.length());
+					resultMean = SigFigUtils.truncate(meanData, resultMin.length() - 2);
 				} else if (resultMax.length() < resultMean.length()) {
-					meanData = MathUtils.roundToSignificantFigures(meanData, resultMax.length() - 2);
-					resultMean = resultMean.substring(0, resultMax.length());
+					resultMean = SigFigUtils.truncate(meanData, resultMax.length() - 2);
 				}
 
 				result = resultMin + " | " + resultMean + " | " + resultMax;

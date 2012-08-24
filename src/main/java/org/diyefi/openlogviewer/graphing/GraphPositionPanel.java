@@ -34,12 +34,14 @@ import javax.swing.JPanel;
 import org.diyefi.openlogviewer.FramesPerSecondPanel;
 import org.diyefi.openlogviewer.OpenLogViewer;
 import org.diyefi.openlogviewer.genericlog.GenericLog;
+import org.diyefi.openlogviewer.utils.SigFigUtils;
 
 public class GraphPositionPanel extends JPanel {
 	private static final long serialVersionUID = 1L;
 
 	private static final int TEXT_Y_OFFSET = 18;
-	private static final double DECIMAL_DISPLAY_THRESHOLD = 0.5;
+	private static final double TENTHS_DISPLAY_THRESHOLD = 0.5;
+	private static final double HUNDRETHS_DISPLAY_THRESHOLD = 0.05;
 	private static final double INITIAL_MAJOR_GRADUATION_SPACING = 100.0;
 
 	private GenericLog genLog;
@@ -177,11 +179,13 @@ public class GraphPositionPanel extends JPanel {
 					}
 				}
 				String positionDataString = "";
-				final BigDecimal positionData = new BigDecimal(nextPositionMarker);
-				if (majorGraduationSpacing > DECIMAL_DISPLAY_THRESHOLD) {
+				if (majorGraduationSpacing > TENTHS_DISPLAY_THRESHOLD) {
+					final BigDecimal positionData = new BigDecimal(nextPositionMarker);
 					positionDataString = positionData.toPlainString();
+				} else if (majorGraduationSpacing > HUNDRETHS_DISPLAY_THRESHOLD){
+					positionDataString = SigFigUtils.roundDecimalPlaces(nextPositionMarker, 1);
 				} else {
-					positionDataString = roundDecimalsOnlyToTwoSignificantFigures(positionData);
+					positionDataString = SigFigUtils.roundDecimalPlaces(nextPositionMarker, 2);
 				}
 				final int stringWidth = fm.stringWidth(positionDataString);
 				g2d.drawString(positionDataString, xCoord - (stringWidth / 2), TEXT_Y_OFFSET);
