@@ -49,7 +49,6 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 	private static final int SHOW_DATA_POINT_ZOOM_THRESHOLD = 5;
 	private static final int DATA_POINT_WIDTH = 3;
 	private static final int DATA_POINT_HEIGHT = DATA_POINT_WIDTH;
-	private static final int DECIMAL_PLACES = 6;
 	private static final double GRAPH_TRACE_SIZE_AS_PERCENTAGE_OF_TOTAL_GRAPH_SIZE = 0.95;
 	private GenericDataElement gde;
 	private double[] dataPointsToDisplay;
@@ -57,6 +56,8 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 	private int availableDataRecords;
 	private int graphBeginningIndex;
 	private int graphEndingIndex;
+
+	public static final int DECIMAL_PLACES = 6;
 
 	public SingleGraphPanel() {
 		setOpaque(false);
@@ -280,16 +281,16 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 	 * @param pointerDistanceFromCenter
 	 * @return Double representation of info at the mouse cursor line which snaps to data points or null if no data under cursor
 	 */
-	public final String getMouseInfo(final int cursorPosition) {
+	public final String getMouseInfo(final int cursorPosition, final int requiredWidth) {
 		final boolean zoomedOut = OpenLogViewer.getInstance().getEntireGraphingPanel().isZoomedOutBeyondOneToOne();
 		String info = "-.-";
 		if (zoomedOut) {
-			info = getMouseInfoZoomedOut(cursorPosition);
+			info = getMouseInfoZoomedOut(cursorPosition, requiredWidth);
 		} else {
-			info = getMouseInfoZoomed(cursorPosition);
+			info = getMouseInfoZoomed(cursorPosition, requiredWidth);
 		}
 
-		return info + "  " + gde.getName();
+		return info;
 	}
 
 	/**
@@ -298,7 +299,7 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 	 * @param pointerDistanceFromCenter
 	 * @return Double representation of info at the mouse cursor line which snaps to data points or null if no data under cursor
 	 */
-	private String getMouseInfoZoomed(final int cursorPosition) {
+	private String getMouseInfoZoomed(final int cursorPosition, final int requiredWidth) {
 		String result = "-.-";
 		final double graphPosition = OpenLogViewer.getInstance().getEntireGraphingPanel().getGraphPosition();
 		final int zoom = OpenLogViewer.getInstance().getEntireGraphingPanel().getZoom();
@@ -309,6 +310,13 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 		final int dataLocation = (int) graphPosition + (int) numSnapsFromLeft;
 		if ((dataLocation >= 0) && (dataLocation < availableDataRecords)) {
 			result = SigFigUtils.roundDecimalPlaces(gde.get(dataLocation), DECIMAL_PLACES);
+
+			// Pad result with required spaces
+			final StringBuilder padded = new StringBuilder(result);
+			while (padded.length() < requiredWidth) {
+				padded.insert(0, ' ');
+			}
+			result = padded.toString();
 		}
 		return result;
 	}
@@ -319,7 +327,7 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 	 * @param pointerDistanceFromCenter
 	 * @return Double representation of info at the mouse cursor line which snaps to data points or null if no data under cursor
 	 */
-	private String getMouseInfoZoomedOut(final int cursorPosition) {
+	private String getMouseInfoZoomedOut(final int cursorPosition, final int requiredWidth) {
 		String result = "-.- | -.- | -.-";
 		if ((cursorPosition >= 0) && (cursorPosition < dataPointRangeInfo.length)) {
 			double minData = dataPointRangeInfo[cursorPosition + EntireGraphingPanel.LEFT_OFFSCREEN_POINTS_ZOOMED_OUT][0];
@@ -329,7 +337,22 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 				String resultMin = SigFigUtils.roundDecimalPlaces(minData, DECIMAL_PLACES);
 				String resultMax = SigFigUtils.roundDecimalPlaces(maxData, DECIMAL_PLACES);
 				String resultMean = SigFigUtils.roundDecimalPlaces(meanData, DECIMAL_PLACES);
-				result = resultMin + " | " + resultMean + " | " + resultMax;
+
+				// Pad results with required spaces
+				final StringBuilder paddedMin = new StringBuilder(resultMin);
+				final StringBuilder paddedMax = new StringBuilder(resultMax);
+				final StringBuilder paddedMean = new StringBuilder(resultMean);
+				while (paddedMin.length() < requiredWidth) {
+					paddedMin.insert(0, ' ');
+				}
+				while (paddedMax.length() < requiredWidth) {
+					paddedMax.insert(0, ' ');
+				}
+				while (paddedMean.length() < requiredWidth) {
+					paddedMean.insert(0, ' ');
+				}
+
+				result = paddedMin + " | " + paddedMean + " | " + paddedMax;
 			}
 		}
 		return result;

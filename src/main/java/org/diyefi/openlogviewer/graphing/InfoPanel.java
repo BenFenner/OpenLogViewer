@@ -36,6 +36,7 @@ import javax.swing.JPanel;
 
 import org.diyefi.openlogviewer.OpenLogViewer;
 import org.diyefi.openlogviewer.genericlog.GenericLog;
+import org.diyefi.openlogviewer.utils.SigFigUtils;
 
 public class InfoPanel extends JPanel implements MouseMotionListener, MouseListener {
 	private static final long serialVersionUID = 1L;
@@ -44,7 +45,7 @@ public class InfoPanel extends JPanel implements MouseMotionListener, MouseListe
 	private static final int ONE_TEXTUAL_HEIGHT = 20;
 	private static final int OFF_SCREEN_COORD = -100;
 	private static final int FONT_SIZE = 12;
-	private static final int INFO_DISPLAY_OFFSET = 40;
+	private static final int INFO_DISPLAY_OFFSET = 4;
 	private GenericLog genLog;
 	private final Color vertBar = new Color(255, 255, 255, 100);
 	private final Color textBackground = new Color(0, 0, 0, 170);
@@ -68,7 +69,7 @@ public class InfoPanel extends JPanel implements MouseMotionListener, MouseListe
 			this.setSize(this.getParent().getSize());
 		}
 
-		g.setFont(new Font(Font.DIALOG, Font.PLAIN, FONT_SIZE)); // Required to keep font consistent when using Mac L&F
+		g.setFont(new Font(Font.MONOSPACED, Font.PLAIN, FONT_SIZE)); // Required to keep font consistent when using Mac L&F
 		if (genLog == null) {
 			g.setColor(Color.RED);
 			g.drawString("No log loaded, please select a log from the file menu.", LEFT_MARGIN_OFFSET, ONE_TEXTUAL_HEIGHT);
@@ -83,12 +84,10 @@ public class InfoPanel extends JPanel implements MouseMotionListener, MouseListe
 					g.drawString(genLog.getLogStatusMessage(), LEFT_MARGIN_OFFSET, ONE_TEXTUAL_HEIGHT * 2);
 					g.drawString("Displaying what we managed to read in before the catastrophy anyway...", LEFT_MARGIN_OFFSET, ONE_TEXTUAL_HEIGHT * 3);
 				}
-
-				final Dimension d = this.getSize();
-				final MultiGraphLayeredPane multigGraph = OpenLogViewer.getInstance().getMultiGraphLayeredPane();
-				final Graphics2D g2d = (Graphics2D) g;
-
 				if (mouseOver) {
+					final int dataWidth = getWidestDataWidth();
+					final Dimension d = this.getSize();
+					final Graphics2D g2d = (Graphics2D) g;
 					final FontMetrics fm = g.getFontMetrics(g.getFont());  // For getting string width
 					final int fontHeight = fm.getHeight();
 					final GraphPositionPanel graphPositionPanel = OpenLogViewer.getInstance().getEntireGraphingPanel().getGraphPositionPanel();
@@ -102,21 +101,21 @@ public class InfoPanel extends JPanel implements MouseMotionListener, MouseListe
 					g2d.drawLine(d.width / 2, 0, d.width / 2, d.height);  // center position line
 					g2d.drawLine(snappedDataPosition, 0, snappedDataPosition, d.height);  // mouse cursor line
 
+					final MultiGraphLayeredPane multigGraph = OpenLogViewer.getInstance().getMultiGraphLayeredPane();
 					for (int i = 0; i < multigGraph.getComponentCount(); i++) {
 						if (multigGraph.getComponent(i) instanceof SingleGraphPanel) {
 							final SingleGraphPanel singleGraph = (SingleGraphPanel) multigGraph.getComponent(i);
 							g2d.setColor(textBackground);
-							final String mouseDataString = singleGraph.getMouseInfo(snappedDataPosition);
-							final int stringWidth = fm.stringWidth(mouseDataString);
-							final String integersString = mouseDataString.substring(0, mouseDataString.indexOf('.'));
-							final int integersWidth = fm.stringWidth(integersString);
-							g2d.fillRect(snappedDataPosition - integersWidth - 2 + INFO_DISPLAY_OFFSET, 
-									yMouseCoord + 2 + (fontHeight * i), 
-									stringWidth + 4, 
+							String mouseDataString = singleGraph.getMouseInfo(snappedDataPosition, dataWidth);
+							mouseDataString = mouseDataString + "  " + singleGraph.getData().getName();
+							final int stringWidth = fm.stringWidth(mouseDataString.toString());
+							g2d.fillRect(snappedDataPosition - 2 + INFO_DISPLAY_OFFSET, 
+									yMouseCoord + 2 + (fontHeight * i),
+									stringWidth + 4,
 									fontHeight);
 							g2d.setColor(singleGraph.getColor());
-							g2d.drawString(mouseDataString, 
-									snappedDataPosition - integersWidth + INFO_DISPLAY_OFFSET, 
+							g2d.drawString(mouseDataString.toString(),
+									snappedDataPosition + INFO_DISPLAY_OFFSET, 
 									yMouseCoord + fontHeight + (fontHeight * i));
 						}
 					}
@@ -128,6 +127,25 @@ public class InfoPanel extends JPanel implements MouseMotionListener, MouseListe
 	public final void setLog(final GenericLog log) {
 		genLog = log;
 		this.repaint();
+	}
+
+	private final int getWidestDataWidth(){
+		String widestDataToDisplay = "";
+		final MultiGraphLayeredPane multigGraph = OpenLogViewer.getInstance().getMultiGraphLayeredPane();
+		for (int i = 0; i < multigGraph.getComponentCount(); i++) {
+			if (multigGraph.getComponent(i) instanceof SingleGraphPanel) {
+				final SingleGraphPanel singleGraph = (SingleGraphPanel) multigGraph.getComponent(i);
+				final String minValue = SigFigUtils.roundDecimalPlaces(singleGraph.getData().getMinValue(), SingleGraphPanel.DECIMAL_PLACES);
+				final String maxValue = SigFigUtils.roundDecimalPlaces(singleGraph.getData().getMaxValue(), SingleGraphPanel.DECIMAL_PLACES);
+				if (minValue.length() > widestDataToDisplay.length()){
+					widestDataToDisplay = minValue;
+				}
+				if (maxValue.length() > widestDataToDisplay.length()){
+					widestDataToDisplay = maxValue;
+				}
+			}
+		}
+		return widestDataToDisplay.length();
 	}
 
 	@Override
