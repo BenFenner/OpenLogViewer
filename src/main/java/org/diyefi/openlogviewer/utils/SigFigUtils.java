@@ -34,7 +34,50 @@ public final class SigFigUtils {
 	private SigFigUtils() {
 	}
 
-	public static String round(final double inputNum, final int sigFigs) {
+	public static String round(final double inputNum, final int sigFigs){
+		//System.out.println("Input: " + inputNum);
+		//System.out.println("Sig Figs: " + sigFigs);
+		// Deal with negative or zero sig fig request
+		if (sigFigs <= 0){
+			//System.out.println("Output: ");
+			return "";
+		}
+
+		// Deal with zero
+		String maybeZero = new Double(inputNum).toString();
+		if ("0.0".equals(maybeZero) || "-0.0".equals(maybeZero)){
+			//System.out.println("Output: 0.0");
+			return "0.0";
+		}
+
+		// Get number in scientific notation with rounding completed
+		final StringBuilder format = new StringBuilder("0.");
+		for (int i = 0; i < sigFigs; i++) {
+			format.append('0');
+		}
+		format.append("E0");
+		//System.out.println("Format: " + format);
+		final DecimalFormat df = new DecimalFormat(format.toString());
+		df.setMaximumIntegerDigits(1);
+		df.setMinimumFractionDigits(sigFigs - 1);
+		df.setMaximumFractionDigits(sigFigs - 1);
+		final String scientificNotation = df.format(inputNum);
+		//System.out.println("Scientific Notation: " + scientificNotation);
+		
+		// Change from scientific notation back to decimal notation
+		final int eIndex = scientificNotation.indexOf('E');
+		final BigDecimal coefficient = new BigDecimal(scientificNotation.substring(0, eIndex));
+		//System.out.println("Coefficient: " + coefficient.toPlainString());
+		final int exponent = new Integer(scientificNotation.substring(eIndex + 1, scientificNotation.length()));
+		//System.out.println("Exponent: " + exponent);
+		final BigDecimal product = coefficient.movePointRight(exponent);
+
+		//System.out.println("Output: " + product.toPlainString());
+
+		return product.toPlainString();
+	}
+
+	public static String roundOld(final double inputNum, final int sigFigs) {
 		// Deal with negative or zero sig fig request
 		if (sigFigs <= 0){
 			return "";

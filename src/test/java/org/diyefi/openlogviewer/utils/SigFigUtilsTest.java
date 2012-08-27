@@ -24,11 +24,18 @@ public class SigFigUtilsTest extends TestCase {
 	protected void tearDown() throws Exception {
 		super.tearDown();
 	}
-	
-	public void testNothing(){
-		assertTrue(true);
+
+	public void testRoundSpeed(){
+		long thePast = System.currentTimeMillis();
+		int iterations = 0;
+
+		for (int i = 0; i < iterations; i++){
+			testRound();
+		}
+		long elapsedTime = System.currentTimeMillis() - thePast;
+		System.out.println("Time to complete " + iterations + " iterations of testRound(): " + elapsedTime + "ms");
 	}
-	
+
 	public void testRound(){
 		int sigFigs = -1;
 		assertEquals("", SigFigUtils.round(1337D, sigFigs));
