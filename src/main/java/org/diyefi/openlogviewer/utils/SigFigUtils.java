@@ -34,6 +34,11 @@ public final class SigFigUtils {
 	private SigFigUtils() {
 	}
 
+	public static String roundNew(final double inputNum, final int sigFigs){
+	
+		return "";
+	}
+	
 	public static String round(final double inputNum, final int sigFigs){
 		//System.out.println("Input: " + inputNum);
 		//System.out.println("Sig Figs: " + sigFigs);
@@ -77,7 +82,7 @@ public final class SigFigUtils {
 		return product.toPlainString();
 	}
 
-	public static String roundOld(final double inputNum, final int sigFigs) {
+	public static String roundOld2(final double inputNum, final int sigFigs) {
 		// Deal with negative or zero sig fig request
 		if (sigFigs <= 0){
 			return "";
@@ -316,13 +321,21 @@ public final class SigFigUtils {
 	 * @param sigDecFigs - The number of decimal places you'd like
 	 * @return
 	 */
-	public static String roundDecimalPlaces(final double inputNum, final int sigDecFigs) {
+	public static String roundDecimalPlaces(final double inputNum, final int numDecPlaces) {
+		//System.out.println("Input: " + inputNum);
+
+		// Deal with zero or negative decimal places
+		if (numDecPlaces <= 0){
+			return String.valueOf(Math.round(inputNum));
+		}
+
 		final StringBuilder format = new StringBuilder("###0.");
 		final StringBuilder negativeZero = new StringBuilder("-0.");
-		for (int i = 0; i < sigDecFigs; i++) {
+		for (int i = 0; i < numDecPlaces; i++) {
 			format.append('0');
 			negativeZero.append('0');
 		}
+		//System.out.println("Format: " + format);
 		final DecimalFormat df = new DecimalFormat(format.toString());
 		final StringBuilder output = new StringBuilder(df.format(inputNum));
 
