@@ -49,7 +49,7 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 	private static final int SHOW_DATA_POINT_ZOOM_THRESHOLD = 5;
 	private static final int DATA_POINT_WIDTH = 3;
 	private static final int DATA_POINT_HEIGHT = DATA_POINT_WIDTH;
-	private static final int SIG_FIGS = 6;
+	private static final int DECIMAL_PLACES = 6;
 	private static final double GRAPH_TRACE_SIZE_AS_PERCENTAGE_OF_TOTAL_GRAPH_SIZE = 0.95;
 	private GenericDataElement gde;
 	private double[] dataPointsToDisplay;
@@ -308,10 +308,7 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 		numSnapsFromLeft = Math.round(numSnapsFromLeft);
 		final int dataLocation = (int) graphPosition + (int) numSnapsFromLeft;
 		if ((dataLocation >= 0) && (dataLocation < availableDataRecords)) {
-			result = SigFigUtils.round(gde.get(dataLocation), SIG_FIGS);
-			if (result.length() > SIG_FIGS + 2) {
-				result = result.substring(0, SIG_FIGS + 2);
-			}
+			result = SigFigUtils.roundDecimalPlaces(gde.get(dataLocation), DECIMAL_PLACES);
 		}
 		return result;
 	}
@@ -329,21 +326,9 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 			double meanData = dataPointRangeInfo[cursorPosition + EntireGraphingPanel.LEFT_OFFSCREEN_POINTS_ZOOMED_OUT][1];
 			double maxData = dataPointRangeInfo[cursorPosition + EntireGraphingPanel.LEFT_OFFSCREEN_POINTS_ZOOMED_OUT][2];
 			if (minData != -Double.MAX_VALUE) {
-				String resultMin = SigFigUtils.round(minData, SIG_FIGS);
-				String resultMax = SigFigUtils.round(maxData, SIG_FIGS);
-				if (resultMin.length() > SIG_FIGS + 2) {
-					resultMin = resultMin.substring(0, SIG_FIGS + 2);
-				}
-				if (resultMax.length() > SIG_FIGS + 2) {
-					resultMax = resultMax.substring(0, SIG_FIGS + 2);
-				}
-				String resultMean = SigFigUtils.round(meanData, SIG_FIGS);
-				if (resultMin.length() > resultMax.length() && resultMin.length() < resultMean.length()) {
-					resultMean = SigFigUtils.round(meanData, resultMin.length() - 2);
-				} else if (resultMax.length() < resultMean.length()) {
-					resultMean = SigFigUtils.round(meanData, resultMax.length() - 2);
-				}
-
+				String resultMin = SigFigUtils.roundDecimalPlaces(minData, DECIMAL_PLACES);
+				String resultMax = SigFigUtils.roundDecimalPlaces(maxData, DECIMAL_PLACES);
+				String resultMean = SigFigUtils.roundDecimalPlaces(meanData, DECIMAL_PLACES);
 				result = resultMin + " | " + resultMean + " | " + resultMax;
 			}
 		}

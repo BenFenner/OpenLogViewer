@@ -44,6 +44,7 @@ public class InfoPanel extends JPanel implements MouseMotionListener, MouseListe
 	private static final int ONE_TEXTUAL_HEIGHT = 20;
 	private static final int OFF_SCREEN_COORD = -100;
 	private static final int FONT_SIZE = 12;
+	private static final int INFO_DISPLAY_OFFSET = 40;
 	private GenericLog genLog;
 	private final Color vertBar = new Color(255, 255, 255, 100);
 	private final Color textBackground = new Color(0, 0, 0, 170);
@@ -88,7 +89,7 @@ public class InfoPanel extends JPanel implements MouseMotionListener, MouseListe
 				final Graphics2D g2d = (Graphics2D) g;
 
 				if (mouseOver) {
-					final FontMetrics fm = this.getFontMetrics(this.getFont());  // For getting string width
+					final FontMetrics fm = g.getFontMetrics(g.getFont());  // For getting string width
 					final int fontHeight = fm.getHeight();
 					final GraphPositionPanel graphPositionPanel = OpenLogViewer.getInstance().getEntireGraphingPanel().getGraphPositionPanel();
 					final int zoom = OpenLogViewer.getInstance().getEntireGraphingPanel().getZoom();
@@ -107,9 +108,16 @@ public class InfoPanel extends JPanel implements MouseMotionListener, MouseListe
 							g2d.setColor(textBackground);
 							final String mouseDataString = singleGraph.getMouseInfo(snappedDataPosition);
 							final int stringWidth = fm.stringWidth(mouseDataString);
-							g2d.fillRect(snappedDataPosition + 1, yMouseCoord + 2 + (fontHeight * i), stringWidth + 3, fontHeight);
+							final String integersString = mouseDataString.substring(0, mouseDataString.indexOf('.'));
+							final int integersWidth = fm.stringWidth(integersString);
+							g2d.fillRect(snappedDataPosition - integersWidth - 2 + INFO_DISPLAY_OFFSET, 
+									yMouseCoord + 2 + (fontHeight * i), 
+									stringWidth + 4, 
+									fontHeight);
 							g2d.setColor(singleGraph.getColor());
-							g2d.drawString(mouseDataString, snappedDataPosition + 3, yMouseCoord + fontHeight + (fontHeight * i));
+							g2d.drawString(mouseDataString, 
+									snappedDataPosition - integersWidth + INFO_DISPLAY_OFFSET, 
+									yMouseCoord + fontHeight + (fontHeight * i));
 						}
 					}
 				}
