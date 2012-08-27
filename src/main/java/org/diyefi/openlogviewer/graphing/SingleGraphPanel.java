@@ -308,7 +308,7 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 		numSnapsFromLeft = Math.round(numSnapsFromLeft);
 		final int dataLocation = (int) graphPosition + (int) numSnapsFromLeft;
 		if ((dataLocation >= 0) && (dataLocation < availableDataRecords)) {
-			result = SigFigUtils.truncate(gde.get(dataLocation), SIG_FIGS);
+			result = SigFigUtils.round(gde.get(dataLocation), SIG_FIGS);
 			if (result.length() > SIG_FIGS + 2) {
 				result = result.substring(0, SIG_FIGS + 2);
 			}
@@ -329,19 +329,19 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 			double meanData = dataPointRangeInfo[cursorPosition + EntireGraphingPanel.LEFT_OFFSCREEN_POINTS_ZOOMED_OUT][1];
 			double maxData = dataPointRangeInfo[cursorPosition + EntireGraphingPanel.LEFT_OFFSCREEN_POINTS_ZOOMED_OUT][2];
 			if (minData != -Double.MAX_VALUE) {
-				String resultMin = SigFigUtils.truncate(minData, SIG_FIGS);
-				String resultMax = SigFigUtils.truncate(maxData, SIG_FIGS);
+				String resultMin = SigFigUtils.round(minData, SIG_FIGS);
+				String resultMax = SigFigUtils.round(maxData, SIG_FIGS);
 				if (resultMin.length() > SIG_FIGS + 2) {
 					resultMin = resultMin.substring(0, SIG_FIGS + 2);
 				}
 				if (resultMax.length() > SIG_FIGS + 2) {
 					resultMax = resultMax.substring(0, SIG_FIGS + 2);
 				}
-				String resultMean = SigFigUtils.truncate(meanData, SIG_FIGS);
+				String resultMean = SigFigUtils.round(meanData, SIG_FIGS);
 				if (resultMin.length() > resultMax.length() && resultMin.length() < resultMean.length()) {
-					resultMean = SigFigUtils.truncate(meanData, resultMin.length() - 2);
+					resultMean = SigFigUtils.round(meanData, resultMin.length() - 2);
 				} else if (resultMax.length() < resultMean.length()) {
-					resultMean = SigFigUtils.truncate(meanData, resultMax.length() - 2);
+					resultMean = SigFigUtils.round(meanData, resultMax.length() - 2);
 				}
 
 				result = resultMin + " | " + resultMean + " | " + resultMax;
