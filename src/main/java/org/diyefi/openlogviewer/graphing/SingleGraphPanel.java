@@ -57,7 +57,7 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 	private int graphBeginningIndex;
 	private int graphEndingIndex;
 
-	public static final int DECIMAL_PLACES = 6;
+	public static final int DECIMAL_PLACES = 3;
 
 	public SingleGraphPanel() {
 		setOpaque(false);
@@ -310,13 +310,8 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 		final int dataLocation = (int) graphPosition + (int) numSnapsFromLeft;
 		if ((dataLocation >= 0) && (dataLocation < availableDataRecords)) {
 			result = SigFigUtils.roundDecimalPlaces(gde.get(dataLocation), DECIMAL_PLACES);
-
-			// Pad result with required spaces
-			final StringBuilder padded = new StringBuilder(result);
-			while (padded.length() < requiredWidth) {
-				padded.insert(0, ' ');
-			}
-			result = padded.toString();
+			result = padWithLeadingSpaces(result, requiredWidth);
+			result = replaceDecimalZerosWithSpaces(result);
 		}
 		return result;
 	}
@@ -338,24 +333,36 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 				String resultMax = SigFigUtils.roundDecimalPlaces(maxData, DECIMAL_PLACES);
 				String resultMean = SigFigUtils.roundDecimalPlaces(meanData, DECIMAL_PLACES);
 
-				// Pad results with required spaces
-				final StringBuilder paddedMin = new StringBuilder(resultMin);
-				final StringBuilder paddedMax = new StringBuilder(resultMax);
-				final StringBuilder paddedMean = new StringBuilder(resultMean);
-				while (paddedMin.length() < requiredWidth) {
-					paddedMin.insert(0, ' ');
-				}
-				while (paddedMax.length() < requiredWidth) {
-					paddedMax.insert(0, ' ');
-				}
-				while (paddedMean.length() < requiredWidth) {
-					paddedMean.insert(0, ' ');
-				}
+				resultMin = padWithLeadingSpaces(resultMin, requiredWidth);
+				resultMax = padWithLeadingSpaces(resultMax, requiredWidth);
+				resultMean = padWithLeadingSpaces(resultMean, requiredWidth);
 
-				result = paddedMin + " | " + paddedMean + " | " + paddedMax;
+				resultMin = replaceDecimalZerosWithSpaces(resultMin);
+				resultMax = replaceDecimalZerosWithSpaces(resultMax);
+				resultMean = replaceDecimalZerosWithSpaces(resultMean);
+
+				result = resultMin + " | " + resultMean + " | " + resultMax;
 			}
 		}
 		return result;
+	}
+
+	private String padWithLeadingSpaces(final String input, final int requiredWidth) {
+		final StringBuilder padded = new StringBuilder(input);
+		while (padded.length() < requiredWidth) {
+			padded.insert(0, ' ');
+		}
+		return padded.toString();
+	}
+
+	private String replaceDecimalZerosWithSpaces(final String input) {
+		final StringBuilder stripped = new StringBuilder(input);
+		for (int i = stripped.length() - 1; stripped.charAt(i - 1) != '.'; i--) {
+			if (stripped.charAt(i) == '0'){
+				stripped.setCharAt(i, ' ');
+			}
+		}
+		return stripped.toString();
 	}
 
 	public final Color getColor() {
