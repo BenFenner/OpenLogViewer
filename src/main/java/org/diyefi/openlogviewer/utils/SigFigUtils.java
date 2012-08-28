@@ -25,7 +25,7 @@ package org.diyefi.openlogviewer.utils;
 import java.text.DecimalFormat;
 
 /**
- * Math is used to provide math functions specific to the project.
+ * SigFigUtils is used to provide significant figure functions specific to the project.
  * @author Ben Fenner
  */
 public final class SigFigUtils {
@@ -40,9 +40,7 @@ public final class SigFigUtils {
 	 * @return
 	 */
 	public static String roundDecimalPlaces(final double inputNum, final int numDecPlaces) {
-		//System.out.println("Input: " + inputNum);
-
-		// Deal with zero or negative decimal places
+		// Deal with zero or negative decimal places requested
 		if (numDecPlaces <= 0){
 			return String.valueOf(Math.round(inputNum));
 		}
@@ -53,7 +51,6 @@ public final class SigFigUtils {
 			format.append('0');
 			negativeZero.append('0');
 		}
-		//System.out.println("Format: " + format);
 		final DecimalFormat df = new DecimalFormat(format.toString());
 		final StringBuilder output = new StringBuilder(df.format(inputNum));
 
