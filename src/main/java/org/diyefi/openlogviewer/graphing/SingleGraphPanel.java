@@ -51,6 +51,7 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 	private static final int DATA_POINT_HEIGHT = DATA_POINT_WIDTH;
 	private static final double GRAPH_TRACE_SIZE_AS_PERCENTAGE_OF_TOTAL_GRAPH_SIZE = 0.95;
 	private GenericDataElement gde;
+	private DataPointCache dataPointCache;
 	private double[] dataPointsToDisplay;
 	private double[][] dataPointRangeInfo;
 	private int availableDataRecords;
@@ -65,6 +66,7 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 
 		graphBeginningIndex = Integer.MIN_VALUE;
 		graphEndingIndex = Integer.MIN_VALUE;
+		dataPointCache = new DataPointCache();
 	}
 
 	@Override
@@ -373,6 +375,9 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 		gde.setDisplayColor(c);
 	}
 
+	/**
+	 * Initialize the graph any time you need to paint
+	 */
 	public final void initGraph() {
 		if (OpenLogViewer.getInstance().getEntireGraphingPanel().isZoomedOutBeyondOneToOne()) {
 			initGraphZoomedOut();
@@ -382,7 +387,9 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 	}
 
 	/**
-	 * initialize the graph any time you need to paint
+	 * Initialize the graph before painting by filling dataPointsToDisplay[]
+	 * with valid data points. This is to be used when the graph is zoomed
+	 * 1:1 or tighter.
 	 */
 	public final void initGraphZoomed() {
 		if (gde != null) {
@@ -422,169 +429,212 @@ public class SingleGraphPanel extends JPanel implements HierarchyBoundsListener,
 	}
 
 	/**
-	 * initialize the graph any time you need to paint
+	 * Initialize the graph before painting by filling dataPointsToDisplay[]
+	 * with valid data points. This is to be used when the graph is zoomed
+	 * out beyond 1:1.
 	 */
 	public final void initGraphZoomedOut() {
 		if (gde != null) {
 			final EntireGraphingPanel egp = OpenLogViewer.getInstance().getEntireGraphingPanel();
+			final int zoom = egp.getZoom();
 			final int graphPosition = (int) egp.getGraphPosition();
 			final int graphWindowWidth = egp.getWidth();
-			final int zoom = egp.getZoom();
-			final int position = graphPosition - (EntireGraphingPanel.LEFT_OFFSCREEN_POINTS_ZOOMED_OUT * zoom);
-			dataPointsToDisplay = new double[graphWindowWidth
-			                                 + EntireGraphingPanel.LEFT_OFFSCREEN_POINTS_ZOOMED_OUT
-			                                 + EntireGraphingPanel.RIGHT_OFFSCREEN_POINTS_ZOOMED_OUT];
-			dataPointRangeInfo = new double[dataPointsToDisplay.length][3];
 			final int numberOfRealPointsThatFitInDisplay = (graphWindowWidth * zoom)
 					+ (EntireGraphingPanel.LEFT_OFFSCREEN_POINTS_ZOOMED_OUT * zoom)
 					+ (EntireGraphingPanel.RIGHT_OFFSCREEN_POINTS_ZOOMED_OUT * zoom);
-			final int rightGraphPosition = position + numberOfRealPointsThatFitInDisplay;
+			final int position = graphPosition - (EntireGraphingPanel.LEFT_OFFSCREEN_POINTS_ZOOMED_OUT * zoom);
 
-			// Reset start/end indices.
-			graphBeginningIndex = Integer.MIN_VALUE;
-			graphEndingIndex = Integer.MIN_VALUE;
+			// Check cache to see if it has data and use it if so
+			if (dataPointCache.containsAll(zoom,
+					position,
+					position + numberOfRealPointsThatFitInDisplay)) {
 
-			/*
-			* Setup data points.
-			*
-			* The data point to display is calculated by taking the average of
-			* the data point spread and comparing it to the previous calculated
-			* data point. If the average is higher, then the highest value of
-			* the data spread is used. If the average is lower, then the lowest
-			* value of the data point spread is used.
-			*
-			* In other words, if the graph is trending upward, the peak is used.
-			* If the graph is trending downward, the valley is used.
-			* This keeps the peaks and valleys intact and the middle stuff is
-			* lost. This maintains the general shape of the graph, and assumes
-			* that local peaks and valleys are the most interesting parts of the
-			* graph to display.
-			*/
-			int nextAarrayIndex = 0;
-			double leftOfNewData = gde.get(0);
-			if (position > 0 && position < availableDataRecords) {
-				leftOfNewData = gde.get(position);
-			}
+				// Reset start/end indices.
+				graphBeginningIndex = Integer.MIN_VALUE;
+				graphEndingIndex = Integer.MIN_VALUE;
 
-			if (zoom < (availableDataRecords / 2)) {
+				// Get data points from cache
+				dataPointsToDisplay = dataPointCache.getAll(zoom,
+						position,
+						position + numberOfRealPointsThatFitInDisplay);
 
-				for (int i = position; i < rightGraphPosition; i += zoom) {
+				// Set start/end indices.
+				for (int i = 1; i < dataPointsToDisplay.length - 1; i++){
+					if (graphBeginningIndex == Integer.MIN_VALUE
+							&& dataPointsToDisplay[i] != -Double.MAX_VALUE 
+							&& dataPointsToDisplay[i - 1] == -Double.MAX_VALUE) {
+						graphBeginningIndex = i;
+					}
+					if (graphEndingIndex == Integer.MIN_VALUE
+							&& dataPointsToDisplay[i] != -Double.MAX_VALUE 
+							&& dataPointsToDisplay[i + 1] == -Double.MAX_VALUE) {
+						graphEndingIndex = i;
+					}
+				}
+			} else {
+				dataPointsToDisplay = new double[graphWindowWidth
+				                                 + EntireGraphingPanel.LEFT_OFFSCREEN_POINTS_ZOOMED_OUT
+				                                 + EntireGraphingPanel.RIGHT_OFFSCREEN_POINTS_ZOOMED_OUT];
+				dataPointRangeInfo = new double[dataPointsToDisplay.length][3];
+				final int rightGraphPosition = position + numberOfRealPointsThatFitInDisplay;
 
-					if (i >= 0 && i < availableDataRecords) {
-						double minData = Double.MAX_VALUE;
-						double maxData = -Double.MAX_VALUE;
-						double newData = 0.0;
-						double acummulateData = 0.0;
-						int divisor = 0;
+				// Reset start/end indices.
+				graphBeginningIndex = Integer.MIN_VALUE;
+				graphEndingIndex = Integer.MIN_VALUE;
 
-						for (int j = 0; j < zoom; j++) {
-							final int gdeIndex = i + j;
-							if (gdeIndex >= 0 && gdeIndex < availableDataRecords) {
-								newData = gde.get(gdeIndex);
-								acummulateData += newData;
-								divisor++;
-								if (newData < minData) {
-									minData = newData;
+				/*
+				* Setup data points.
+				*
+				* The data point to display is calculated by taking the average of
+				* the data point spread and comparing it to the previous calculated
+				* data point. If the average is higher, then the highest value of
+				* the data spread is used. If the average is lower, then the lowest
+				* value of the data point spread is used.
+				*
+				* In other words, if the graph is trending upward, the peak is used.
+				* If the graph is trending downward, the valley is used.
+				* This keeps the peaks and valleys intact and the middle stuff is
+				* lost. This maintains the general shape of the graph, and assumes
+				* that local peaks and valleys are the most interesting parts of the
+				* graph to display.
+				*/
+				int nextAarrayIndex = 0;
+				double leftOfNewData = gde.get(0);
+				if (position > 0 && position < availableDataRecords) {
+					leftOfNewData = gde.get(position);
+				}
+
+				if (zoom < (availableDataRecords / 2)) {
+
+					for (int i = position; i < rightGraphPosition; i += zoom) {
+
+						if (i >= 0 && i < availableDataRecords) {
+							double minData = Double.MAX_VALUE;
+							double maxData = -Double.MAX_VALUE;
+							double newData = 0.0;
+							double acummulateData = 0.0;
+							int divisor = 0;
+
+							for (int j = 0; j < zoom; j++) {
+								final int gdeIndex = i + j;
+								if (gdeIndex >= 0 && gdeIndex < availableDataRecords) {
+									newData = gde.get(gdeIndex);
+									acummulateData += newData;
+									divisor++;
+									if (newData < minData) {
+										minData = newData;
+									}
+
+									if (newData > maxData) {
+										maxData = newData;
+									}
+
+									// Set start/end indices.
+									if (graphBeginningIndex == Integer.MIN_VALUE && (gdeIndex >= 0 && gdeIndex < zoom)) {
+										graphBeginningIndex = nextAarrayIndex;
+									}
+
+									if (gdeIndex == availableDataRecords - 1) {
+										graphEndingIndex = nextAarrayIndex;
+									}
+
 								}
-
-								if (newData > maxData) {
-									maxData = newData;
-								}
-
-								// Set start/end indices.
-								if (graphBeginningIndex == Integer.MIN_VALUE && (gdeIndex >= 0 && gdeIndex < zoom)) {
-									graphBeginningIndex = nextAarrayIndex;
-								}
-
-								if (gdeIndex == availableDataRecords - 1) {
-									graphEndingIndex = nextAarrayIndex;
-								}
-
 							}
-						}
-						final double averageData = acummulateData / divisor;
-						if (averageData > leftOfNewData) {
-							dataPointsToDisplay[nextAarrayIndex] = maxData;
-							leftOfNewData = maxData;
-						} else if (averageData < leftOfNewData) {
-							dataPointsToDisplay[nextAarrayIndex] = minData;
-							leftOfNewData = minData;
+							final double averageData = acummulateData / divisor;
+							if (averageData > leftOfNewData) {
+								dataPointsToDisplay[nextAarrayIndex] = maxData;
+								leftOfNewData = maxData;
+							} else if (averageData < leftOfNewData) {
+								dataPointsToDisplay[nextAarrayIndex] = minData;
+								leftOfNewData = minData;
+							} else {
+								dataPointsToDisplay[nextAarrayIndex] = averageData;
+								leftOfNewData = averageData;
+							}
+							dataPointRangeInfo[nextAarrayIndex][0] = minData;
+							dataPointRangeInfo[nextAarrayIndex][1] = averageData;
+							dataPointRangeInfo[nextAarrayIndex][2] = maxData;
+							nextAarrayIndex++;
 						} else {
-							dataPointsToDisplay[nextAarrayIndex] = averageData;
-							leftOfNewData = averageData;
+							dataPointsToDisplay[nextAarrayIndex] = -Double.MAX_VALUE;
+							dataPointRangeInfo[nextAarrayIndex][0] = -Double.MAX_VALUE;
+							dataPointRangeInfo[nextAarrayIndex][1] = -Double.MAX_VALUE;
+							dataPointRangeInfo[nextAarrayIndex][2] = -Double.MAX_VALUE;
+							nextAarrayIndex++;
 						}
-						dataPointRangeInfo[nextAarrayIndex][0] = minData;
-						dataPointRangeInfo[nextAarrayIndex][1] = averageData;
-						dataPointRangeInfo[nextAarrayIndex][2] = maxData;
-						nextAarrayIndex++;
-					} else {
+					}
+					// Cache the data
+					dataPointCache.cache(dataPointsToDisplay,
+							zoom,
+							position,
+							position + numberOfRealPointsThatFitInDisplay);
+				} else {
+
+					/*
+					* Setup data points when extremely zoomed out.
+					*
+					* If the zoom value is higher than the entire length of
+					* available data then it is possible for the normal algorithm
+					* to skip over the data completely when sweeping across the
+					* screen from left to right in zoom steps. If zoom reaches
+					* that high of a value, then use this alternative algorithm
+					* instead.
+					*
+					*/
+
+					// Fill in null data points until zero position is reached.
+					for (int i = position; i < 0; i += zoom) {
 						dataPointsToDisplay[nextAarrayIndex] = -Double.MAX_VALUE;
 						dataPointRangeInfo[nextAarrayIndex][0] = -Double.MAX_VALUE;
 						dataPointRangeInfo[nextAarrayIndex][1] = -Double.MAX_VALUE;
 						dataPointRangeInfo[nextAarrayIndex][2] = -Double.MAX_VALUE;
 						nextAarrayIndex++;
 					}
-				}
-			} else {
 
-				/*
-				* Setup data points when extremely zoomed out.
-				*
-				* If the zoom value is higher than the entire length of
-				* available data then it is possible for the normal algorithm
-				* to skip over the data completely when sweeping across the
-				* screen from left to right in zoom steps. If zoom reaches
-				* that high of a value, then use this alternative algorithm
-				* instead.
-				*
-				*/
+					// Find min/mean/max of entire available data and place at position zero.
+					double minData = Double.MAX_VALUE;
+					double maxData = -Double.MAX_VALUE;
+					double newData = 0.0;
+					double acummulateData = 0.0;
+					int divisor = 0;
+					for (int i = 0; i < availableDataRecords; i++) {
+						newData = gde.get(i);
+						acummulateData += newData;
+						divisor++;
+						if (newData < minData) {
+							minData = newData;
+						}
 
-				// Fill in null data points until zero position is reached.
-				for (int i = position; i < 0; i += zoom) {
-					dataPointsToDisplay[nextAarrayIndex] = -Double.MAX_VALUE;
-					dataPointRangeInfo[nextAarrayIndex][0] = -Double.MAX_VALUE;
-					dataPointRangeInfo[nextAarrayIndex][1] = -Double.MAX_VALUE;
-					dataPointRangeInfo[nextAarrayIndex][2] = -Double.MAX_VALUE;
+						if (newData > maxData) {
+							maxData = newData;
+						}
+					}
+					final double averageData = acummulateData / divisor;
+					dataPointsToDisplay[nextAarrayIndex] = averageData;
+					dataPointRangeInfo[nextAarrayIndex][0] = minData;
+					dataPointRangeInfo[nextAarrayIndex][1] = averageData;
+					dataPointRangeInfo[nextAarrayIndex][2] = maxData;
+
+					// Set start/end indices.
+					graphBeginningIndex = nextAarrayIndex;
+					graphEndingIndex = nextAarrayIndex;
+
 					nextAarrayIndex++;
-				}
 
-				// Find min/mean/max of entire available data and place at position zero.
-				double minData = Double.MAX_VALUE;
-				double maxData = -Double.MAX_VALUE;
-				double newData = 0.0;
-				double acummulateData = 0.0;
-				int divisor = 0;
-				for (int i = 0; i < availableDataRecords; i++) {
-					newData = gde.get(i);
-					acummulateData += newData;
-					divisor++;
-					if (newData < minData) {
-						minData = newData;
+					// Fill in the rest of the array with null data points.
+					for (int i = zoom * 2; i < rightGraphPosition; i += zoom) {
+						dataPointsToDisplay[nextAarrayIndex] = -Double.MAX_VALUE;
+						dataPointRangeInfo[nextAarrayIndex][0] = -Double.MAX_VALUE;
+						dataPointRangeInfo[nextAarrayIndex][1] = -Double.MAX_VALUE;
+						dataPointRangeInfo[nextAarrayIndex][2] = -Double.MAX_VALUE;
+						nextAarrayIndex++;
 					}
 
-					if (newData > maxData) {
-						maxData = newData;
-					}
-				}
-				final double averageData = acummulateData / divisor;
-				dataPointsToDisplay[nextAarrayIndex] = averageData;
-				dataPointRangeInfo[nextAarrayIndex][0] = minData;
-				dataPointRangeInfo[nextAarrayIndex][1] = averageData;
-				dataPointRangeInfo[nextAarrayIndex][2] = maxData;
-
-				// Set start/end indices.
-				graphBeginningIndex = nextAarrayIndex;
-				graphEndingIndex = nextAarrayIndex;
-
-				nextAarrayIndex++;
-
-				// Fill in the rest of the array with null data points.
-				for (int i = zoom * 2; i < rightGraphPosition; i += zoom) {
-					dataPointsToDisplay[nextAarrayIndex] = -Double.MAX_VALUE;
-					dataPointRangeInfo[nextAarrayIndex][0] = -Double.MAX_VALUE;
-					dataPointRangeInfo[nextAarrayIndex][1] = -Double.MAX_VALUE;
-					dataPointRangeInfo[nextAarrayIndex][2] = -Double.MAX_VALUE;
-					nextAarrayIndex++;
+					// Cache the data
+					dataPointCache.cache(dataPointsToDisplay,
+							zoom,
+							position,
+							position + numberOfRealPointsThatFitInDisplay);
 				}
 			}
 		}

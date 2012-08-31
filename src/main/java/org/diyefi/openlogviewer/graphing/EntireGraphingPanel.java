@@ -284,7 +284,7 @@ public class EntireGraphingPanel extends JPanel implements ActionListener,
 	/**
 	 * The widest the user should be allowed to zoom out.
 	 */
-	private int getWidestZoom() {
+	public int getWidestZoom() {
 		return ((graphSize + 1) / 2);
 	}
 
@@ -519,7 +519,7 @@ public class EntireGraphingPanel extends JPanel implements ActionListener,
 	}
 
 	/**
-	 * How many available data records we are dealing with.
+	 * Set how many available data records we are dealing with.
 	 */
 	public final void setGraphSize(final int newGraphSize) {
 		graphSize = newGraphSize;
@@ -527,6 +527,13 @@ public class EntireGraphingPanel extends JPanel implements ActionListener,
 			zoomGraphToFit(graphSize);
 			centerGraphPosition(0, graphSize);
 		}
+	}
+
+	/**
+	 * Return how many available data records we are dealing with.
+	 */
+	public final int getGraphSize(){
+		return graphSize;
 	}
 
 	/**
